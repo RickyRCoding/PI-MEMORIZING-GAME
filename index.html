@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pi Memory Challenge - Dark Mode</title>
+    <style>
+      :root {
+        --bg-color: #121212;
+        --card-bg: #1e1e1e;
+        --accent-orange: #ff9800;
+        --accent-hover: #e68900;
+        --text-main: #e0e0e0;
+        --text-dim: #b0b0b0;
+        --error-red: #ff5252;
+        --success-green: #4caf50;
+      }
+
+      body {
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        background: var(--card-bg);
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        width: 100%;
+        max-width: 700px;
+        text-align: center;
+        border: 1px solid #333;
+      }
+
+      h1 {
+        color: var(--accent-orange);
+        margin-bottom: 0.5rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+      }
+
+      .subtitle {
+        color: var(--text-dim);
+        margin-bottom: 2rem;
+      }
+
+      .pi-display {
+        font-family: "Courier New", Courier, monospace;
+        font-size: 1.8rem;
+        background: #000;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        word-break: break-all;
+        min-height: 120px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: center;
+        border: 1px solid #444;
+        line-height: 1.4;
+      }
+
+      .pi-static {
+        color: var(--accent-orange);
+      }
+      .pi-typed {
+        color: var(--text-main);
+      }
+
+      #hidden-input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        /* Ensure the input isn't scrolled to when focused on mobile */
+        top: 0;
+        left: 0;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 25px;
+      }
+
+      .stat-box {
+        background: #2a2a2a;
+        padding: 15px;
+        border-radius: 10px;
+        border-bottom: 3px solid transparent;
+      }
+
+      .stat-label {
+        display: block;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        margin-bottom: 5px;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      .mistake-value {
+        color: var(--error-red);
+      }
+      .correct-value {
+        color: var(--accent-orange);
+      }
+
+      #message {
+        margin-bottom: 20px;
+        font-size: 1.2rem;
+        height: 1.5em;
+        font-weight: 600;
+      }
+
+      .btn {
+        background: var(--accent-orange);
+        color: #000;
+        border: none;
+        padding: 12px 30px;
+        font-size: 1rem;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-transform: uppercase;
+      }
+
+      .btn:hover {
+        background: var(--accent-hover);
+        transform: translateY(-2px);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .focus-prompt {
+        color: var(--accent-orange);
+        font-size: 0.9rem;
+        margin-top: 10px;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" onclick="focusInput()">
+      <h1>PI CHALLENGE</h1>
+      <p class="subtitle">
+        Type the decimals of Pi. Three strikes and you're out!
+      </p>
+
+      <div class="stats-grid">
+        <div class="stat-box" style="border-color: var(--error-red)">
+          <span class="stat-label">Strikes</span>
+          <span id="mistakes" class="stat-value mistake-value">0 / 3</span>
+        </div>
+        <div class="stat-box" style="border-color: var(--accent-orange)">
+          <span class="stat-label">Digits Memorized</span>
+          <span id="count" class="stat-value correct-value">0</span>
+        </div>
+      </div>
+
+      <div class="pi-display">
+        <span class="pi-static">3.</span>
+        <span id="typed-area" class="pi-typed"></span>
+      </div>
+
+      <!-- Modified input to trigger numeric keypad on mobile -->
+      <input
+        type="tel"
+        id="hidden-input"
+        autocomplete="off"
+        spellcheck="false"
+        inputmode="numeric"
+      />
+
+      <div id="message"></div>
+      <button class="btn" onclick="resetGame(event)">Restart Challenge</button>
+      <div class="focus-prompt" id="focus-msg">
+        Click anywhere to start typing
+      </div>
+    </div>
+
+    <script>
+      // First 1000 digits of Pi decimals
+      const piString =
+        "1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679821480865132823066470938446095505822317253594081284811174502841027019385211055596446229489549303819644288109756659334461284756482337867831652712019091456485669234603486104543266482133936072602491412737245870066063155881748815209209628292540917153643678925903600113305305488204665213841469519415116094330572703657595919530921861173819326117931051185480744623799627495673518857527248912279381830119491298336733624406566430860213949463952247371907021798609437027705392171762931767523846748184676694051320005681271452635608277857713427577896091736371787214684409012249534301465495853710507922796892589235420199561121290219608640344181598136297747713099605187072113499999983729780499510597317328160963185950244594553469083026425223344452184494538193261179310511854807446237996274956735188575272489122793818301194912983367336244065664308602139494639522473719070217986094370277053921717629317675238467481846766940513200056812714526356082778577134275778960917363717872146844090122495343014654958537105079227968925892354201995611212902196086403441815981362977477130996051870721134999999837297804995105973173281609631859502445945534690830264252233444521844945381932611793105118548074462379962749567351885752724891227938183011949129833673362440656643086021394946395224737190702179860943702770539217176293176752384674818467669405132000568127145263560827785771342757789609173637178721468440901224953430146549585371050792279689258923542019956112129021960864034418159813629774771309960518707211349999998372978049951059731732816096318595024459455346908302642522334445218449453819326117931051185480744623799627495673518857527248912279381830119491298336733624406566430860213949463952247371907021798609437027705392171762931767523846748184676694051320005681271452635608277857713427577896091736371787214684409012249534301465495853710507922796892589235420199561121290219608640344181598136297747713099605187072113499999983729780499510597317328160963185950244594553469083026425223344452184494538193261179310511854807446237996274956735188575272489122793818301194912983367336244065664308602139494639522473719070217986094370277053921717629317675238467481846766940513200056812714526356082778577134275778960917363717872146844090122495343014654958537105079227968925892354201995611212902196086403441815981362977477130996051870721134999999837297804995105973173281609631859502445945534690830264252233444521844945381932611793105118548074462379962749567351885752724891227938183011949129833673362440656643086021394946395224737190702179860943702770539217176293176752384674818467669405132000568127145263560827785771342757";
+
+      const hiddenInput = document.getElementById("hidden-input");
+      const typedArea = document.getElementById("typed-area");
+      const mistakesDisplay = document.getElementById("mistakes");
+      const countDisplay = document.getElementById("count");
+      const messageDisplay = document.getElementById("message");
+      const focusMsg = document.getElementById("focus-msg");
+
+      let mistakes = 0;
+      let typedSoFar = "";
+      let isGameOver = false;
+
+      function focusInput() {
+        if (!isGameOver) {
+          hiddenInput.focus();
+          focusMsg.style.display = "none";
+        }
+      }
+
+      hiddenInput.addEventListener("input", (e) => {
+        if (isGameOver) return;
+
+        const val = hiddenInput.value;
+        if (val.length === 0) return;
+
+        const charTyped = val.slice(-1);
+        hiddenInput.value = ""; // Clear immediately for next char
+
+        // Only allow numbers
+        if (!/[0-9]/.test(charTyped)) return;
+
+        const expectedChar = piString[typedSoFar.length];
+
+        if (charTyped === expectedChar) {
+          typedSoFar += charTyped;
+          typedArea.innerText = typedSoFar;
+          countDisplay.innerText = typedSoFar.length;
+
+          // Auto-scroll logic for mobile visibility
+          window.scrollTo(0, document.body.scrollHeight);
+        } else {
+          mistakes++;
+          mistakesDisplay.innerText = `${mistakes} / 3`;
+
+          // Visual feedback for error
+          document.body.style.backgroundColor = "#2a1212";
+          setTimeout(() => {
+            if (!isGameOver)
+              document.body.style.backgroundColor = "var(--bg-color)";
+          }, 100);
+
+          if (mistakes >= 3) {
+            gameOver();
+          }
+        }
+      });
+
+      function gameOver() {
+        isGameOver = true;
+        hiddenInput.blur();
+        document.body.style.backgroundColor = "#1a0000";
+        messageDisplay.innerText = `GAME OVER! Final Score: ${typedSoFar.length}`;
+        messageDisplay.style.color = "var(--error-red)";
+        focusMsg.style.display = "none";
+      }
+
+      function resetGame(e) {
+        if (e) e.stopPropagation();
+        mistakes = 0;
+        typedSoFar = "";
+        isGameOver = false;
+        hiddenInput.value = "";
+        typedArea.innerText = "";
+        mistakesDisplay.innerText = "0 / 3";
+        countDisplay.innerText = "0";
+        messageDisplay.innerText = "";
+        document.body.style.backgroundColor = "var(--bg-color)";
+        focusMsg.style.display = "block";
+        focusInput();
+      }
+
+      // Initialize focus
+      window.onload = focusInput;
+    </script>
+  </body>
+</html>
